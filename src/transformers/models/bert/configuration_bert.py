@@ -157,6 +157,18 @@ class BertConfig(PretrainedConfig):
         self.classifier_dropout = classifier_dropout
 
 
+class StitchedBertConfig(BertConfig):
+    model_type = "stitched_bert"
+
+    def __init__(
+        self,
+        **kwargs
+    ):
+        super().__init__(**kwargs)
+        self.stitch_hidden_size = self.hidden_size * 2
+        self.stitch_intermediate_size = self.intermediate_size * 2
+
+
 class BertOnnxConfig(OnnxConfig):
     @property
     def inputs(self) -> Mapping[str, Mapping[int, str]]:
