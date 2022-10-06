@@ -19,6 +19,7 @@
 import math
 import os
 import warnings
+import copy
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
@@ -55,6 +56,8 @@ from ...modeling_utils import (
 )
 from ...utils import logging
 from .configuration_bert import BertConfig
+
+from .stitch_utils import copy_linear, copy_layernorm
 
 
 logger = logging.get_logger(__name__)
@@ -1254,6 +1257,35 @@ class StitchedBertModel(BertPreTrainedModel):
             attentions=encoder_outputs.attentions,
             cross_attentions=encoder_outputs.cross_attentions,
         )
+
+    def initialize_weights(self, src1, src2):
+        """
+        Args:
+            src1 (transformer.BertModel): small bert model to stitch
+            src2 (transformer.BertModel): small bert model to stitch
+        """
+        # copy embeddings
+        self.embeddings1 = copy.deepcopy(src2.embeddings)
+        self.embeddings2 = copy.deepcopy(src2.embeddings)
+
+        # copy within layers
+        for layer_st, layer_1, layer_2 in zip(self.encoder.layer, src1.encoder.layer, src2.encoder.layer):
+            assert type(layer_st.attention1) == type(layer_1.attention)
+            assert type(layer_st.attention2) == type(layer_2.attention)
+
+            # copy attention modules
+            layer_st.attention1 = copy.deepcopy(layer_1.attention)
+            layer_st.attention2 = copy.deepcopy(layer_2.attention)
+
+            # copy intermediate ffn
+            copy_linear(layer_st.intermediate.dense, layer_1.intermediate.dense, layer_2.intermediate.dense)
+
+            # copy output ffn
+            copy_linear(layer_st.output.dense, layer_1.output.dense, layer_2.output.dense)
+            copy_layernorm(layer_st.output.LayerNorm, layer_1.output.LayerNorm, layer_2.output.LayerNorm)
+
+        # copy pooler
+        copy_linear(self.pooler.dense, src1.pooler.dense, src2.pooler.dense)
 
 
 @add_start_docstrings(
