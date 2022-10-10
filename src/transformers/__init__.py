@@ -754,7 +754,6 @@ if is_torch_available():
             "BertLayer",
             "BertLMHeadModel",
             "BertModel",
-            "StitchedBertModel",
             "BertPreTrainedModel",
             "load_tf_weights_in_bert",
         ]
@@ -2965,7 +2964,6 @@ if TYPE_CHECKING:
             BertLayer,
             BertLMHeadModel,
             BertModel,
-            StitchedBertModel,
             BertPreTrainedModel,
             load_tf_weights_in_bert,
         )
