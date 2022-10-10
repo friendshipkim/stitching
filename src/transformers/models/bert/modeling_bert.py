@@ -19,7 +19,6 @@
 import math
 import os
 import warnings
-import copy
 from dataclasses import dataclass
 from typing import Optional, Tuple
 
@@ -56,8 +55,6 @@ from ...modeling_utils import (
 )
 from ...utils import logging
 from .configuration_bert import BertConfig
-
-from .stitch_utils import copy_linear, copy_layernorm
 
 
 logger = logging.get_logger(__name__)
@@ -435,14 +432,10 @@ class BertIntermediate(nn.Module):
 
 
 class BertOutput(nn.Module):
-    def __init__(self, config, is_stitched=False):
+    def __init__(self, config):
         super().__init__()
-        if is_stitched:
-            self.dense = nn.Linear(config.stitch_intermediate_size, config.stitch_hidden_size)
-            self.LayerNorm = nn.LayerNorm(config.stitch_hidden_size, eps=config.layer_norm_eps)
-        else:
-            self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
-            self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.dense = nn.Linear(config.intermediate_size, config.hidden_size)
+        self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
     def forward(self, hidden_states, input_tensor):
@@ -453,29 +446,19 @@ class BertOutput(nn.Module):
 
 
 class BertLayer(nn.Module):
-    def __init__(self, config, is_stitched=False):
+    def __init__(self, config):
         super().__init__()
         self.chunk_size_feed_forward = config.chunk_size_feed_forward
         self.seq_len_dim = 1
-
-        # for stitching
-        if is_stitched:
-            self.attention1 = BertAttention(config)
-            self.attention2 = BertAttention(config)
-            self.is_stitched = is_stitched
-        else:
-            self.attention = BertAttention(config)
-            self.is_stitched = is_stitched
-
+        self.attention = BertAttention(config)
         self.is_decoder = config.is_decoder
         self.add_cross_attention = config.add_cross_attention
-        # currently False, TODO
         if self.add_cross_attention:
             if not self.is_decoder:
                 raise ValueError(f"{self} should be used as a decoder model if cross attention is added")
-            self.crossattention = BertAttention(config, position_embedding_type="absolute", is_stitched=is_stitched)
-        self.intermediate = BertIntermediate(config, is_stitched)
-        self.output = BertOutput(config, is_stitched)
+            self.crossattention = BertAttention(config, position_embedding_type="absolute")
+        self.intermediate = BertIntermediate(config)
+        self.output = BertOutput(config)
 
     def forward(
         self,
@@ -489,48 +472,21 @@ class BertLayer(nn.Module):
     ):
         # decoder uni-directional self-attention cached key/values tuple is at positions 1,2
         self_attn_past_key_value = past_key_value[:2] if past_key_value is not None else None
-
-        # stitching
-        if self.is_stitched:
-            hidden_states1, hidden_states2 = torch.chunk(hidden_states, 2, dim=-1)
-            self_attention_outputs1 = self.attention1(
-                hidden_states1,
-                attention_mask,
-                head_mask,
-                output_attentions=output_attentions,
-                past_key_value=self_attn_past_key_value,
-            )
-            self_attention_outputs2 = self.attention2(
-                hidden_states2,
-                attention_mask,
-                head_mask,
-                output_attentions=output_attentions,
-                past_key_value=self_attn_past_key_value,
-            )
-            attention_output = torch.cat((self_attention_outputs1[0], self_attention_outputs2[0]), dim=-1)
-        else:
-            self_attention_outputs = self.attention(
-                hidden_states,
-                attention_mask,
-                head_mask,
-                output_attentions=output_attentions,
-                past_key_value=self_attn_past_key_value,
-            )
-            attention_output = self_attention_outputs[0]
+        self_attention_outputs = self.attention(
+            hidden_states,
+            attention_mask,
+            head_mask,
+            output_attentions=output_attentions,
+            past_key_value=self_attn_past_key_value,
+        )
+        attention_output = self_attention_outputs[0]
 
         # if decoder, the last output is tuple of self-attn cache
-        # currently False, TODO
         if self.is_decoder:
             outputs = self_attention_outputs[1:-1]
             present_key_value = self_attention_outputs[-1]
         else:
-            if self.is_stitched:
-                outputs = tuple(
-                    torch.cat((out1, out2), dim=0)
-                    for out1, out2 in zip(self_attention_outputs1[1:], self_attention_outputs2[1:])
-                )
-            else:
-                outputs = self_attention_outputs[1:]  # add self attentions if we output attention weights
+            outputs = self_attention_outputs[1:]  # add self attentions if we output attention weights
 
         cross_attn_present_key_value = None
         if self.is_decoder and encoder_hidden_states is not None:
@@ -575,10 +531,10 @@ class BertLayer(nn.Module):
 
 
 class BertEncoder(nn.Module):
-    def __init__(self, config, is_stitched=False):
+    def __init__(self, config):
         super().__init__()
         self.config = config
-        self.layer = nn.ModuleList([BertLayer(config, is_stitched) for _ in range(config.num_hidden_layers)])
+        self.layer = nn.ModuleList([BertLayer(config) for _ in range(config.num_hidden_layers)])
         self.gradient_checkpointing = False
 
     def forward(
@@ -672,12 +628,9 @@ class BertEncoder(nn.Module):
 
 
 class BertPooler(nn.Module):
-    def __init__(self, config, is_stitched=False):
+    def __init__(self, config):
         super().__init__()
-        if is_stitched:
-            self.dense = nn.Linear(config.stitch_hidden_size, config.stitch_hidden_size)
-        else:
-            self.dense = nn.Linear(config.hidden_size, config.hidden_size)
+        self.dense = nn.Linear(config.hidden_size, config.hidden_size)
         self.activation = nn.Tanh()
 
     def forward(self, hidden_states):
@@ -1088,13 +1041,12 @@ class StitchedBertModel(BertPreTrainedModel):
         super().__init__(config)
         self.config = config
 
-        # two embeddings
         self.embeddings1 = BertEmbeddings(config)
         self.embeddings2 = BertEmbeddings(config)
 
-        self.encoder = BertEncoder(config, is_stitched=True)
+        self.encoder = BertEncoder(config)
 
-        self.pooler = BertPooler(config, is_stitched=True) if add_pooling_layer else None
+        self.pooler = BertPooler(config) if add_pooling_layer else None
 
         # Initialize weights and apply final processing
         self.post_init()
@@ -1215,7 +1167,6 @@ class StitchedBertModel(BertPreTrainedModel):
         # and head_mask is converted to shape [num_hidden_layers x batch x num_heads x seq_length x seq_length]
         head_mask = self.get_head_mask(head_mask, self.config.num_hidden_layers)
 
-        # two embedding outputs
         embedding_output1 = self.embeddings1(
             input_ids=input_ids,
             position_ids=position_ids,
@@ -1230,9 +1181,9 @@ class StitchedBertModel(BertPreTrainedModel):
             inputs_embeds=inputs_embeds,
             past_key_values_length=past_key_values_length,
         )
-
         encoder_outputs = self.encoder(
-            torch.cat((embedding_output1, embedding_output2), dim=-1),
+            embedding_output1,
+            embedding_output2,
             attention_mask=extended_attention_mask,
             head_mask=head_mask,
             encoder_hidden_states=encoder_hidden_states,
@@ -1257,35 +1208,6 @@ class StitchedBertModel(BertPreTrainedModel):
             attentions=encoder_outputs.attentions,
             cross_attentions=encoder_outputs.cross_attentions,
         )
-
-    def initialize_weights(self, src1, src2):
-        """
-        Args:
-            src1 (transformer.BertModel): small bert model to stitch
-            src2 (transformer.BertModel): small bert model to stitch
-        """
-        # copy embeddings
-        self.embeddings1 = copy.deepcopy(src2.embeddings)
-        self.embeddings2 = copy.deepcopy(src2.embeddings)
-
-        # copy within layers
-        for layer_st, layer_1, layer_2 in zip(self.encoder.layer, src1.encoder.layer, src2.encoder.layer):
-            assert type(layer_st.attention1) == type(layer_1.attention)
-            assert type(layer_st.attention2) == type(layer_2.attention)
-
-            # copy attention modules
-            layer_st.attention1 = copy.deepcopy(layer_1.attention)
-            layer_st.attention2 = copy.deepcopy(layer_2.attention)
-
-            # copy intermediate ffn
-            copy_linear(layer_st.intermediate.dense, layer_1.intermediate.dense, layer_2.intermediate.dense)
-
-            # copy output ffn
-            copy_linear(layer_st.output.dense, layer_1.output.dense, layer_2.output.dense)
-            copy_layernorm(layer_st.output.LayerNorm, layer_1.output.LayerNorm, layer_2.output.LayerNorm)
-
-        # copy pooler
-        copy_linear(self.pooler.dense, src1.pooler.dense, src2.pooler.dense)
 
 
 @add_start_docstrings(
