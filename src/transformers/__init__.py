@@ -172,6 +172,7 @@ _import_structure = {
         "BERT_PRETRAINED_CONFIG_ARCHIVE_MAP",
         "BasicTokenizer",
         "BertConfig",
+        "StitchedBertConfig",
         "BertTokenizer",
         "WordpieceTokenizer",
     ],
@@ -2476,6 +2477,7 @@ if TYPE_CHECKING:
         BERT_PRETRAINED_CONFIG_ARCHIVE_MAP,
         BasicTokenizer,
         BertConfig,
+        StitchedBertConfig,
         BertTokenizer,
         WordpieceTokenizer,
     )
