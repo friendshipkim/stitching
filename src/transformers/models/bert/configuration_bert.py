@@ -165,9 +165,9 @@ class StitchedBertConfig(BertConfig):
         **kwargs
     ):
         super().__init__(**kwargs)
-        self.is_stitched = True
         self.hidden_size = self.hidden_size * 2
         self.intermediate_size = self.intermediate_size * 2
+        self.epsilon = 0
 
 
 class BertOnnxConfig(OnnxConfig):
