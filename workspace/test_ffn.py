@@ -2,9 +2,17 @@ import torch
 import copy
 
 from transformers import BertTokenizer, AutoModel, BertModel, StitchedBertConfig
-from transformers.models.bert.stitch_utils import is_stitchable, stitch
+from transformers.models.bert.stitch_utils import check_if_stitchable, stitch
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
+
+
+def test_embeddings(x, src1, src2, tgt):
+    src1_emb = src1.embeddings(x, debug=True)
+    src2_emb = src2.embeddings(x, debug=True)
+    tgt_emb = tgt.embeddings(x, debug=True)
+
+    assert torch.isclose(torch.cat((src1_emb, src2_emb), dim=-1), tgt_emb).all()
 
 
 def print_model_cfg(model):
@@ -28,6 +36,7 @@ if __name__ == "__main__":
     for model in [small_model, large_model]:
         model.config.output_hidden_states = True
         model.config.output_attentions = True
+        model.config.test_mode = True
 
     # print model configs
     print("small model")
@@ -45,7 +54,22 @@ if __name__ == "__main__":
     stitched_config = StitchedBertConfig(**small_model.config.to_dict())
     stitched_model = BertModel(stitched_config).to(device)
 
-    if is_stitchable(src_model_1, src_model_2):
-        stitch(src_model_1, src_model_2, stitched_model)
+    # check if the two models are stitchable
+    check_if_stitchable(src_model_1.config, src_model_2.config)
+    
+    # stitch
+    stitch(src_model_1, src_model_2, stitched_model)
+
+    # ===== test
+    # input
+    text = "Example input."
+    encoded_input = tokenizer(text, return_tensors='pt').to(device)
+    
+    # embedding
+    test_embeddings(encoded_input['input_ids'], src_model_1, src_model_2, stitched_model)
+
+    # self attention
+    # bert layer
+    # pooler
         
     breakpoint()
