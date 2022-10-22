@@ -19,7 +19,7 @@ def check_if_stitchable(src1_cfg: Type[BertConfig], src2_cfg: Type[BertConfig]) 
         src2_cfg (transformers.BertConfig): second source model config
     """
     assert src1_cfg.vocab_size == src2_cfg.vocab_size, "vocab sizes should match"
-    assert src1_cfg.num_hidden_layers == src2_cfg.config.num_hidden_layers, "number of hidden layers should match"
+    assert src1_cfg.num_hidden_layers == src2_cfg.num_hidden_layers, "number of hidden layers should match"
 
 
 def copy_linear(src1: Type[nn.Linear], src2: Type[nn.Linear], tgt: Type[nn.Linear], epsilon: float) -> None:
@@ -90,27 +90,13 @@ def copy_self_attn(
         tgt (transformers.models.bert.modeling_bert.BertSelfAttention): target BertSelfAttention module
         epsilon (float): float number to fill the rest
     """
-    src1_dim, src2_dim, _ = src1.query.weight.size(0), src2.query.weight.size(0), tgt.query.weight.size(0)
-
-    for transform_type in ["query", "key", "value"]:
-        # Initialize with epsilon
-        tgt.get_submodule(transform_type).weight.data[:] = epsilon
-
-        # TODO: remove extra dimension, add `_copy_projection` func
-        # Copy weights, src1 - top left, src2 - bottom right
-        tgt.get_submodule(transform_type).weight.data[0, :src1_dim, :src1_dim] = src1.get_submodule(
-            transform_type
-        ).weight.data
-        tgt.get_submodule(transform_type).weight.data[1, -src2_dim:, -src2_dim:] = src2.get_submodule(
-            transform_type
-        ).weight.data
-
-        # Copy biases
-        tgt.get_submodule(transform_type).bias.data[0, :src1_dim] = src1.get_submodule(transform_type).bias.data
-        tgt.get_submodule(transform_type).bias.data[1, -src2_dim:] = src2.get_submodule(transform_type).bias.data
+    # copy linear layers of query, key, value
+    copy_linear(src1.query, src2.query, tgt.query, epsilon)
+    copy_linear(src1.key, src2.key, tgt.key, epsilon)
+    copy_linear(src1.value, src2.value, tgt.value, epsilon)
 
 
-def copy_attentions(
+def copy_attention(
     src1: Type[BertAttention], src2: Type[BertAttention], tgt: Type[BertAttention], epsilon: float
 ) -> None:
     """
@@ -176,7 +162,7 @@ def stitch(src1: Type[BertModel], src2: Type[BertModel], tgt: Type[BertModel]) -
     # Copy transformer layers
     for layer_1, layer_2, layer_st in zip(src1.encoder.layer, src2.encoder.layer, tgt.encoder.layer):
         # Multihead attentions
-        copy_attentions(layer_1.attention, layer_2.attention, layer_st.attention, epsilon)
+        copy_attention(layer_1.attention, layer_2.attention, layer_st.attention, epsilon)
 
         # Intermediate ffn
         copy_linear(layer_1.intermediate.dense, layer_2.intermediate.dense, layer_st.intermediate.dense, epsilon)
