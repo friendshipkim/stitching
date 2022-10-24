@@ -6,11 +6,13 @@ from torch import nn
 
 import pytest
 
-from transformers.models.bert.stitch_utils import copy_linear, copy_self_attn, copy_attention, copy_embeddings
-from transformers.models.bert.modeling_bert import BertSelfAttention, BertEmbeddings, BertAttention
+from transformers.models.bert.stitch_utils import copy_linear, copy_self_attn, copy_attention, copy_embeddings, copy_layer
+from transformers.models.bert.modeling_bert import BertSelfAttention, BertEmbeddings, BertAttention, BertLayer
+
+# precision
+atol = 1e-07
 
 
-# ====== test functions
 @pytest.mark.ffn
 def test_embeddings(src_cfg, stitched_cfg, input_id_sample):
     # if test mode is in cfg, set true in bertconfig?
@@ -81,3 +83,21 @@ def test_attn(src_cfg, stitched_cfg, hidden_state_samples):
     tgt_out = stitched_attn(tgt_hidden, test_mode=True)[0]
 
     assert torch.isclose(torch.cat((src1_out, src2_out), dim=-1), tgt_out).all().item()
+
+
+@pytest.mark.ffn
+def test_layer(src_cfg, stitched_cfg, hidden_state_samples):
+    src1_hidden, src2_hidden, tgt_hidden = hidden_state_samples
+
+    src1_layer = BertLayer(src_cfg)
+    src2_layer = BertLayer(src_cfg)
+    stitched_layer = BertLayer(stitched_cfg)
+
+    copy_layer(src1_layer, src2_layer, stitched_layer, stitched_cfg.epsilon)
+
+    # NOTE: BertLayer module outputs a tuple
+    src1_out = src1_layer(src1_hidden, test_mode=True)[0]
+    src2_out = src2_layer(src2_hidden, test_mode=True)[0]
+    tgt_out = stitched_layer(tgt_hidden, test_mode=True)[0]
+
+    assert torch.isclose(torch.cat((src1_out, src2_out), dim=-1), tgt_out, atol=atol).all().item()
