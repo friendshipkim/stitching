@@ -10,3 +10,7 @@
     * used in `BertLayer` class
     * breaks the math
     * for now, just use regular linear layers instead of chunking
+* Testing stitch utils
+  ```
+  pytest workspace/tests/test_stitch_utils.py
+  ```
