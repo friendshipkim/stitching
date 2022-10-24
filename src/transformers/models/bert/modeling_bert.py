@@ -187,7 +187,7 @@ class BertEmbeddings(nn.Module):
             )
 
     def forward(
-        self, input_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None, past_key_values_length=0
+        self, input_ids=None, token_type_ids=None, position_ids=None, inputs_embeds=None, past_key_values_length=0, test_mode=None
     ):
         if input_ids is not None:
             input_shape = input_ids.size()
@@ -218,6 +218,10 @@ class BertEmbeddings(nn.Module):
         if self.position_embedding_type == "absolute":
             position_embeddings = self.position_embeddings(position_ids)
             embeddings += position_embeddings
+        # in test mode, skip layernorm and dropout
+        if test_mode:
+            print("test mode: skipping layernorm, dropout in BertEmbeddings")
+            return embeddings
         embeddings = self.LayerNorm(embeddings)
         embeddings = self.dropout(embeddings)
         return embeddings
@@ -232,8 +236,12 @@ class BertSelfAttention(nn.Module):
                 f"heads ({config.num_attention_heads})"
             )
 
+        # NOTE: attention_head_size of two stitched model should be the same
+        # num_attention_heads - stitch: 2h, regular: h
         self.num_attention_heads = config.num_attention_heads
+        # attention_head_size - stitch, regular : d / h
         self.attention_head_size = int(config.hidden_size / config.num_attention_heads)
+        # all_head_size - stitch: 2d, regular: d
         self.all_head_size = self.num_attention_heads * self.attention_head_size
 
         self.query = nn.Linear(config.hidden_size, self.all_head_size)
@@ -264,6 +272,7 @@ class BertSelfAttention(nn.Module):
         encoder_attention_mask=None,
         past_key_value=None,
         output_attentions=False,
+        test_mode=None,
     ):
         mixed_query_layer = self.query(hidden_states)
 
@@ -287,9 +296,13 @@ class BertSelfAttention(nn.Module):
             key_layer = torch.cat([past_key_value[0], key_layer], dim=2)
             value_layer = torch.cat([past_key_value[1], value_layer], dim=2)
         else:
+            # key_layer, shape: [bsz, num_attention_heads, seq_len, attention_head_size]
             key_layer = self.transpose_for_scores(self.key(hidden_states))
+            # value_layer, shape: [bsz, num_attention_heads, seq_len, attention_head_size]
             value_layer = self.transpose_for_scores(self.value(hidden_states))
 
+        # shape of query/key/value layers:
+        # [bsz, num_attention_heads, seq_len, attention_head_size]
         query_layer = self.transpose_for_scores(mixed_query_layer)
 
         if self.is_decoder:
@@ -303,6 +316,7 @@ class BertSelfAttention(nn.Module):
             past_key_value = (key_layer, value_layer)
 
         # Take the dot product between "query" and "key" to get the raw attention scores.
+        # shape: [bsz, num_attention_heads, seq_len, seq_len]
         attention_scores = torch.matmul(query_layer, key_layer.transpose(-1, -2))
 
         if self.position_embedding_type == "relative_key" or self.position_embedding_type == "relative_key_query":
@@ -331,16 +345,22 @@ class BertSelfAttention(nn.Module):
 
         # This is actually dropping out entire tokens to attend to, which might
         # seem a bit unusual, but is taken from the original Transformer paper.
-        attention_probs = self.dropout(attention_probs)
+        # if in test mode, skip dropout
+        if test_mode:
+            print("test mode: skipping dropout in BertSelfAttn")
+        else:
+            attention_probs = self.dropout(attention_probs)
 
         # Mask heads if we want to
         if head_mask is not None:
             attention_probs = attention_probs * head_mask
 
+        # context layer, shape: [bsz, num_attention_heads, seq_len, seq_len]
         context_layer = torch.matmul(attention_probs, value_layer)
 
         context_layer = context_layer.permute(0, 2, 1, 3).contiguous()
         new_context_layer_shape = context_layer.size()[:-2] + (self.all_head_size,)
+        # view to the original hidden shape - shape: [bsz, seq_len, hidden_size]
         context_layer = context_layer.view(new_context_layer_shape)
 
         outputs = (context_layer, attention_probs) if output_attentions else (context_layer,)
@@ -357,8 +377,11 @@ class BertSelfOutput(nn.Module):
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
-    def forward(self, hidden_states, input_tensor):
+    def forward(self, hidden_states, input_tensor, test_mode=None):
         hidden_states = self.dense(hidden_states)
+        if test_mode:
+            print("test mode: skipping layernorm, dropout in BertSelfOutput")
+            return hidden_states
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
         return hidden_states
@@ -398,6 +421,7 @@ class BertAttention(nn.Module):
         encoder_attention_mask=None,
         past_key_value=None,
         output_attentions=False,
+        test_mode=None,
     ):
         self_outputs = self.self(
             hidden_states,
@@ -407,8 +431,9 @@ class BertAttention(nn.Module):
             encoder_attention_mask,
             past_key_value,
             output_attentions,
+            test_mode
         )
-        attention_output = self.output(self_outputs[0], hidden_states)
+        attention_output = self.output(self_outputs[0], hidden_states, test_mode)
         outputs = (attention_output,) + self_outputs[1:]  # add attentions if we output them
         return outputs
 
@@ -435,8 +460,11 @@ class BertOutput(nn.Module):
         self.LayerNorm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
         self.dropout = nn.Dropout(config.hidden_dropout_prob)
 
-    def forward(self, hidden_states, input_tensor):
+    def forward(self, hidden_states, input_tensor, test_mode=None):
         hidden_states = self.dense(hidden_states)
+        if test_mode:
+            print("test mode: skipping layernorm, dropout in BertOutput")
+            return hidden_states
         hidden_states = self.dropout(hidden_states)
         hidden_states = self.LayerNorm(hidden_states + input_tensor)
         return hidden_states
@@ -466,6 +494,7 @@ class BertLayer(nn.Module):
         encoder_attention_mask=None,
         past_key_value=None,
         output_attentions=False,
+        test_mode=None,
     ):
         # decoder uni-directional self-attention cached key/values tuple is at positions 1,2
         self_attn_past_key_value = past_key_value[:2] if past_key_value is not None else None
@@ -475,6 +504,7 @@ class BertLayer(nn.Module):
             head_mask,
             output_attentions=output_attentions,
             past_key_value=self_attn_past_key_value,
+            test_mode=test_mode,
         )
         attention_output = self_attention_outputs[0]
 
@@ -510,9 +540,15 @@ class BertLayer(nn.Module):
             cross_attn_present_key_value = cross_attention_outputs[-1]
             present_key_value = present_key_value + cross_attn_present_key_value
 
-        layer_output = apply_chunking_to_forward(
-            self.feed_forward_chunk, self.chunk_size_feed_forward, self.seq_len_dim, attention_output
-        )
+        # TODO: handle `apply_chunking_to_forward` function
+        # layer_output = apply_chunking_to_forward(
+        #     self.feed_forward_chunk, self.chunk_size_feed_forward, self.seq_len_dim, attention_output
+        # )
+        
+        # without `apply_chunking_to_forward` for stitching
+        intermediate_output = self.intermediate(attention_output)
+        layer_output = self.output(intermediate_output, attention_output, test_mode)
+        
         outputs = (layer_output,) + outputs
 
         # if decoder, return the attn key/values as the last output
@@ -546,6 +582,7 @@ class BertEncoder(nn.Module):
         output_attentions=False,
         output_hidden_states=False,
         return_dict=True,
+        test_mode=None,
     ):
         all_hidden_states = () if output_hidden_states else None
         all_self_attentions = () if output_attentions else None
@@ -590,6 +627,7 @@ class BertEncoder(nn.Module):
                     encoder_attention_mask,
                     past_key_value,
                     output_attentions,
+                    test_mode=test_mode,
                 )
 
             hidden_states = layer_outputs[0]
@@ -906,6 +944,7 @@ class BertModel(BertPreTrainedModel):
         output_attentions=None,
         output_hidden_states=None,
         return_dict=None,
+        test_mode=None,
     ):
         r"""
         encoder_hidden_states  (`torch.FloatTensor` of shape `(batch_size, sequence_length, hidden_size)`, *optional*):
@@ -932,6 +971,9 @@ class BertModel(BertPreTrainedModel):
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
+
+        # stitch test mode
+        test_mode = test_mode if test_mode is not None else self.config.test_mode
 
         if self.config.is_decoder:
             use_cache = use_cache if use_cache is not None else self.config.use_cache
@@ -992,6 +1034,7 @@ class BertModel(BertPreTrainedModel):
             token_type_ids=token_type_ids,
             inputs_embeds=inputs_embeds,
             past_key_values_length=past_key_values_length,
+            test_mode=test_mode
         )
         encoder_outputs = self.encoder(
             embedding_output,
@@ -1004,6 +1047,7 @@ class BertModel(BertPreTrainedModel):
             output_attentions=output_attentions,
             output_hidden_states=output_hidden_states,
             return_dict=return_dict,
+            test_mode=test_mode,
         )
         sequence_output = encoder_outputs[0]
         pooled_output = self.pooler(sequence_output) if self.pooler is not None else None
