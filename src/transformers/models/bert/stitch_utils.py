@@ -6,7 +6,7 @@ from torch import nn
 from typing import Type
 
 from transformers import BertConfig, BertModel
-from transformers.models.bert.modeling_bert import BertSelfAttention, BertEmbeddings, BertAttention
+from transformers.models.bert.modeling_bert import BertSelfAttention, BertEmbeddings, BertAttention, BertLayer
 
 
 # TODO: merge this into StitchedBertConfig
@@ -39,6 +39,11 @@ def copy_linear(src1: Type[nn.Linear], src2: Type[nn.Linear], tgt: Type[nn.Linea
     src1_out_dim, src1_in_dim = src1.weight.size()
     src2_out_dim, src2_in_dim = src2.weight.size()
     tgt_out_dim, tgt_in_dim = tgt.weight.size()
+    # if src1_out_dim != src1_in_dim:
+    #     print("src1_out_dim:", src1_out_dim)
+    #     print("src1_in_dim:", src1_in_dim)
+    #     print("tgt_out_dim:", tgt_out_dim)
+    #     print("tgt_in_dim:", tgt_in_dim)
 
     assert tgt_out_dim == src1_out_dim + src2_out_dim
     assert tgt_in_dim == src1_in_dim + src2_in_dim
@@ -121,6 +126,30 @@ def copy_attention(
     copy_layernorm(src1.output.LayerNorm, src2.output.LayerNorm, tgt.output.LayerNorm)
 
 
+def copy_layer(src1: Type[BertLayer], src2: Type[BertLayer], tgt: Type[BertLayer], epsilon: float) -> None:
+    """
+    Copy "" of the two source Bert layers to the target layer
+
+    Args:
+        src1 (transformers.models.bert.modeling_bert.BertLayer): first source BertLayer
+        src2 (transformers.models.bert.modeling_bert.BertLayer): second source BertLayer
+        tgt (transformers.models.bert.modeling_bert.BertLayer): target BertLayer
+        epsilon (float): float number to fill the rest
+    """
+    # Multihead attentions
+    print("copy attention")
+    copy_attention(src1.attention, src2.attention, tgt.attention, epsilon)
+
+    # Intermediate ffn
+    print("copy intermediate")
+    copy_linear(src1.intermediate.dense, src2.intermediate.dense, tgt.intermediate.dense, epsilon)
+
+    # Output ffn
+    print("copy output")
+    copy_linear(src1.output.dense, src2.output.dense, tgt.output.dense, epsilon)
+    copy_layernorm(src1.output.LayerNorm, src2.output.LayerNorm, tgt.output.LayerNorm)
+
+
 def copy_embeddings(src1: Type[BertEmbeddings], src2: Type[BertEmbeddings], tgt: Type[BertEmbeddings]) -> None:
     """
     Copy embeddings and layernorm of the two source BertEmbeddings modules to the target module
@@ -161,15 +190,7 @@ def stitch(src1: Type[BertModel], src2: Type[BertModel], tgt: Type[BertModel]) -
 
     # Copy transformer layers
     for layer_1, layer_2, layer_st in zip(src1.encoder.layer, src2.encoder.layer, tgt.encoder.layer):
-        # Multihead attentions
-        copy_attention(layer_1.attention, layer_2.attention, layer_st.attention, epsilon)
-
-        # Intermediate ffn
-        copy_linear(layer_1.intermediate.dense, layer_2.intermediate.dense, layer_st.intermediate.dense, epsilon)
-
-        # Output ffn
-        copy_linear(layer_1.output.dense, layer_2.output.dense, layer_st.output.dense, epsilon)
-        copy_layernorm(layer_1.output.LayerNorm, layer_2.output.LayerNorm, layer_st.output.LayerNorm)
+        copy_layer(layer_1, layer_2, layer_st, epsilon)
 
     # Pooler
     copy_linear(src1.pooler.dense, src2.pooler.dense, tgt.pooler.dense, epsilon)
