@@ -22,7 +22,8 @@ input_text = "Example input."
 def src_model(model_name: str = model_name) -> Type[BertModel]:
     # load small pretrained model
     src_model = AutoModel.from_pretrained(model_name)
-    src_model.config.test_mode = True
+    src_model.config.output_hidden_states = True
+    src_model.config.output_attentions = True
     return src_model
 
 
@@ -43,10 +44,12 @@ def stitched_model(stitched_cfg) -> Type[BertModel]:
 
 @pytest.fixture
 def models(src_model, stitched_model) -> Tuple[Type[BertModel], Type[BertModel], Type[BertModel]]:
-    return src_model, copy.deepcopy(src_model), stitched_model
+    # 2nd source model - copy src_model or define new one with src_config
+    # return src_model, copy.deepcopy(src_model), stitched_model
+    return src_model, BertModel(src_model.config), stitched_model
 
 
-# ====== fixture functions for input samples
+# ====== fixture functions for input/hidden states samples
 @pytest.fixture()
 def input_id_sample(src_cfg) -> Type[torch.LongTensor]:
     return torch.randint(0, src_cfg.vocab_size, (bsz, seq_len)).long()
@@ -54,7 +57,6 @@ def input_id_sample(src_cfg) -> Type[torch.LongTensor]:
 
 @pytest.fixture()
 def input_sample(vocab_path: str = vocab_path, input_text: str = input_text) -> Type[BatchEncoding]:
-    # vocabs are identical for small and large
     tokenizer = BertTokenizer(vocab_path)
     encoded_input = tokenizer(input_text, return_tensors="pt")
 

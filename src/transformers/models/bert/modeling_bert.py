@@ -236,7 +236,7 @@ class BertSelfAttention(nn.Module):
                 f"heads ({config.num_attention_heads})"
             )
 
-        # NOTE: attention_head_size of two stitched model should be the same
+        # NOTE: attention_head_size of two source model should be identical
         # num_attention_heads - stitch: 2h, regular: h
         self.num_attention_heads = config.num_attention_heads
         # attention_head_size - stitch, regular : d / h
@@ -544,7 +544,7 @@ class BertLayer(nn.Module):
         # layer_output = apply_chunking_to_forward(
         #     self.feed_forward_chunk, self.chunk_size_feed_forward, self.seq_len_dim, attention_output
         # )
-        
+
         # without `apply_chunking_to_forward` for stitching
         intermediate_output = self.intermediate(attention_output)
         layer_output = self.output(intermediate_output, attention_output, test_mode)
@@ -971,9 +971,6 @@ class BertModel(BertPreTrainedModel):
             output_hidden_states if output_hidden_states is not None else self.config.output_hidden_states
         )
         return_dict = return_dict if return_dict is not None else self.config.use_return_dict
-
-        # stitch test mode
-        test_mode = test_mode if test_mode is not None else self.config.test_mode
 
         if self.config.is_decoder:
             use_cache = use_cache if use_cache is not None else self.config.use_cache

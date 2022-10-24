@@ -137,15 +137,12 @@ def copy_layer(src1: Type[BertLayer], src2: Type[BertLayer], tgt: Type[BertLayer
         epsilon (float): float number to fill the rest
     """
     # Multihead attentions
-    print("copy attention")
     copy_attention(src1.attention, src2.attention, tgt.attention, epsilon)
 
     # Intermediate ffn
-    print("copy intermediate")
     copy_linear(src1.intermediate.dense, src2.intermediate.dense, tgt.intermediate.dense, epsilon)
 
     # Output ffn
-    print("copy output")
     copy_linear(src1.output.dense, src2.output.dense, tgt.output.dense, epsilon)
     copy_layernorm(src1.output.LayerNorm, src2.output.LayerNorm, tgt.output.LayerNorm)
 
