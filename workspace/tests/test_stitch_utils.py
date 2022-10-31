@@ -23,14 +23,14 @@ atol = 1e-07
 @pytest.mark.ffn
 def test_embeddings(src_cfg, stitched_cfg, input_id_sample):
     # if test mode is in cfg, set true in bertconfig?
-    # instead of passing test_mode
+    # instead of passing skip_ln_dp
     src1_emb = BertEmbeddings(src_cfg)
     src2_emb = BertEmbeddings(src_cfg)
     tgt_emb = BertEmbeddings(stitched_cfg)
 
     copy_embeddings(src1_emb, src2_emb, tgt_emb)
 
-    emb_input = {"input_ids": input_id_sample, "test_mode": True}
+    emb_input = {"input_ids": input_id_sample, "skip_ln_dp": True}
 
     src1_emb_out = src1_emb(**emb_input)
     src2_emb_out = src2_emb(**emb_input)
@@ -67,9 +67,9 @@ def test_copy_self_attn(src_cfg, stitched_cfg, hidden_state_samples):
     copy_self_attn(src1_self_attn, src2_self_attn, stitched_self_attn, stitched_cfg.epsilon)
 
     # NOTE: BertSelfAttention module outputs a tuple
-    src1_out = src1_self_attn(src1_hidden, test_mode=True)[0]
-    src2_out = src2_self_attn(src2_hidden, test_mode=True)[0]
-    tgt_out = stitched_self_attn(tgt_hidden, test_mode=True)[0]
+    src1_out = src1_self_attn(src1_hidden, skip_ln_dp=True)[0]
+    src2_out = src2_self_attn(src2_hidden, skip_ln_dp=True)[0]
+    tgt_out = stitched_self_attn(tgt_hidden, skip_ln_dp=True)[0]
 
     assert torch.isclose(torch.cat((src1_out, src2_out), dim=-1), tgt_out).all().item()
 
@@ -85,9 +85,9 @@ def test_attn(src_cfg, stitched_cfg, hidden_state_samples):
     copy_attention(src1_attn, src2_attn, stitched_attn, stitched_cfg.epsilon)
 
     # NOTE: BertAttention module outputs a tuple
-    src1_out = src1_attn(src1_hidden, test_mode=True)[0]
-    src2_out = src2_attn(src2_hidden, test_mode=True)[0]
-    tgt_out = stitched_attn(tgt_hidden, test_mode=True)[0]
+    src1_out = src1_attn(src1_hidden, skip_ln_dp=True)[0]
+    src2_out = src2_attn(src2_hidden, skip_ln_dp=True)[0]
+    tgt_out = stitched_attn(tgt_hidden, skip_ln_dp=True)[0]
 
     assert torch.isclose(torch.cat((src1_out, src2_out), dim=-1), tgt_out).all().item()
 
@@ -103,9 +103,9 @@ def test_layer(src_cfg, stitched_cfg, hidden_state_samples):
     copy_layer(src1_layer, src2_layer, stitched_layer, stitched_cfg.epsilon)
 
     # NOTE: BertLayer module outputs a tuple
-    src1_out = src1_layer(src1_hidden, test_mode=True)[0]
-    src2_out = src2_layer(src2_hidden, test_mode=True)[0]
-    tgt_out = stitched_layer(tgt_hidden, test_mode=True)[0]
+    src1_out = src1_layer(src1_hidden, skip_ln_dp=True)[0]
+    src2_out = src2_layer(src2_hidden, skip_ln_dp=True)[0]
+    tgt_out = stitched_layer(tgt_hidden, skip_ln_dp=True)[0]
 
     assert torch.isclose(torch.cat((src1_out, src2_out), dim=-1), tgt_out, atol=atol).all().item()
 
@@ -118,9 +118,9 @@ def test_bert(models, input_sample):
 
     # outputs (dict)
     # keys: ['last_hidden_state', 'pooler_output', 'hidden_states', 'attentions']
-    src1_out = src1_model(**input_sample, test_mode=True)
-    src2_out = src2_model(**input_sample, test_mode=True)
-    tgt_out = stitched_model(**input_sample, test_mode=True)
+    src1_out = src1_model(**input_sample, skip_ln_dp=True)
+    src2_out = src2_model(**input_sample, skip_ln_dp=True)
+    tgt_out = stitched_model(**input_sample, skip_ln_dp=True)
 
     # check embeddings (hidden_states[0]) and hidden states (layer outputs)
     for src1_hidden, src2_hidden, tgt_hidden in zip(
