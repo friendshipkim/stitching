@@ -5,7 +5,7 @@ import torch
 from torch import nn
 from typing import Type
 
-from transformers import BertConfig, BertModel
+from transformers import BertConfig, BertModel, BertForSequenceClassification
 from transformers.models.bert.modeling_bert import BertSelfAttention, BertEmbeddings, BertAttention, BertLayer
 
 
@@ -102,7 +102,7 @@ def copy_self_attn(
 
 
 def copy_attention(
-    src1: Type[BertAttention], src2: Type[BertAttention], tgt: Type[BertAttention], epsilon: float
+    src1: Type[BertAttention], src2: Type[BertAttention], tgt: Type[BertAttention], epsilon: float, skip_layernorm: bool,
 ) -> None:
     """
     Copy input/output linear projections and layernorm of the two source BertAttention modules to the target module
@@ -123,10 +123,11 @@ def copy_attention(
     copy_linear(src1.output.dense, src2.output.dense, tgt.output.dense, epsilon)
 
     # Layernorm
-    copy_layernorm(src1.output.LayerNorm, src2.output.LayerNorm, tgt.output.LayerNorm)
+    if not skip_layernorm:
+        copy_layernorm(src1.output.LayerNorm, src2.output.LayerNorm, tgt.output.LayerNorm)
 
 
-def copy_layer(src1: Type[BertLayer], src2: Type[BertLayer], tgt: Type[BertLayer], epsilon: float) -> None:
+def copy_layer(src1: Type[BertLayer], src2: Type[BertLayer], tgt: Type[BertLayer], epsilon: float, skip_layernorm: bool) -> None:
     """
     Copy "" of the two source Bert layers to the target layer
 
@@ -140,14 +141,15 @@ def copy_layer(src1: Type[BertLayer], src2: Type[BertLayer], tgt: Type[BertLayer
     copy_attention(src1.attention, src2.attention, tgt.attention, epsilon)
 
     # Intermediate ffn
-    copy_linear(src1.intermediate.dense, src2.intermediate.dense, tgt.intermediate.dense, epsilon)
+    copy_linear(src1.intermediate.dense, src2.intermediate.dense, tgt.intermediate.dense, epsilon, skip_layernorm)
 
     # Output ffn
     copy_linear(src1.output.dense, src2.output.dense, tgt.output.dense, epsilon)
-    copy_layernorm(src1.output.LayerNorm, src2.output.LayerNorm, tgt.output.LayerNorm)
+    if not skip_layernorm:
+        copy_layernorm(src1.output.LayerNorm, src2.output.LayerNorm, tgt.output.LayerNorm)
 
 
-def copy_embeddings(src1: Type[BertEmbeddings], src2: Type[BertEmbeddings], tgt: Type[BertEmbeddings]) -> None:
+def copy_embeddings(src1: Type[BertEmbeddings], src2: Type[BertEmbeddings], tgt: Type[BertEmbeddings], skip_layernorm: bool) -> None:
     """
     Copy embeddings and layernorm of the two source BertEmbeddings modules to the target module
 
@@ -168,10 +170,11 @@ def copy_embeddings(src1: Type[BertEmbeddings], src2: Type[BertEmbeddings], tgt:
         )
 
     # Layernorm
-    copy_layernorm(src1.LayerNorm, src2.LayerNorm, tgt.LayerNorm)
+    if not skip_layernorm:
+        copy_layernorm(src1.LayerNorm, src2.LayerNorm, tgt.LayerNorm)
 
 
-def stitch(src1: Type[BertModel], src2: Type[BertModel], tgt: Type[BertModel]) -> None:
+def stitch(src1: Type[BertModel], src2: Type[BertModel], tgt: Type[BertModel], skip_layernorm: bool) -> None:
     """
     Stitch two Bert models by copying the internal weights
 
@@ -181,13 +184,19 @@ def stitch(src1: Type[BertModel], src2: Type[BertModel], tgt: Type[BertModel]) -
         tgt (transformer.BertModel): stitched target model
     """
     epsilon = tgt.config.epsilon
+    
+    # for sequence classification
+    if isinstance(src1, BertForSequenceClassification):
+        src1 = src1.bert
+        src2 = src2.bert
+        tgt = tgt.bert
 
     # Embeddings
-    copy_embeddings(src1.embeddings, src2.embeddings, tgt.embeddings)
+    copy_embeddings(src1.embeddings, src2.embeddings, tgt.embeddings, skip_layernorm)
 
     # Copy transformer layers
     for layer_1, layer_2, layer_st in zip(src1.encoder.layer, src2.encoder.layer, tgt.encoder.layer):
-        copy_layer(layer_1, layer_2, layer_st, epsilon)
+        copy_layer(layer_1, layer_2, layer_st, epsilon, skip_layernorm)
 
     # Pooler
     copy_linear(src1.pooler.dense, src2.pooler.dense, tgt.pooler.dense, epsilon)
