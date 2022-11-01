@@ -2,7 +2,8 @@ import os
 import torch
 import copy
 
-from transformers import BertTokenizer, AutoModel, BertModel, StitchedBertConfig
+from transformers import BertForSequenceClassification, BertTokenizer, BertModel, StitchedBertConfig
+from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoModel
 from transformers.models.bert.stitch_utils import check_if_stitchable, stitch
 
 
@@ -11,10 +12,13 @@ device = "cuda" if torch.cuda.is_available() else "cpu"
 small_model_name = "prajjwal1/bert-mini"
 large_model_name = "prajjwal1/bert-small"
 
+skip_layernorm = True
+
 # vocabs are identical for small and large
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 vocab_path = os.path.join(ROOT_DIR, "./vocab.txt")
-input_text = "Example input."
+input_text1 = "Where is art?"
+input_text2 = "Where and what is art?"
 
 
 def print_model_cfg(model):
@@ -25,16 +29,25 @@ def print_model_cfg(model):
     print()
 
 
-if __name__ == "__main__":
+def load_tokenizer(model_name=small_model_name, model_max_length=512):
+    # tokenizer = AutoTokenizer.from_pretrained("distilbert-base-uncased")
+    tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=model_max_length)
+    # or use vocab path
+    # tokenizer = BertTokenizer(vocab_path)
+    return tokenizer
+
+
+def load_models(num_labels):
     # load pretrained models
-    small_model = AutoModel.from_pretrained(small_model_name).to(device)
-    large_model = AutoModel.from_pretrained(large_model_name).to(device)
+    small_model = AutoModelForSequenceClassification.from_pretrained(small_model_name, num_labels=num_labels).to(device)
+    large_model = AutoModelForSequenceClassification.from_pretrained(large_model_name, num_labels=num_labels).to(device)
 
     # set configs to return intermediate outputs
+    # NOTE: disable this to use trainer
     # https://huggingface.co/docs/transformers/model_doc/bert#transformers.BertForPreTraining.forward
-    for model in [small_model, large_model]:
-        model.config.output_hidden_states = True
-        model.config.output_attentions = True
+    # for model in [small_model, large_model]:
+    #     model.config.output_hidden_states = True
+    #     model.config.output_attentions = True
 
     # print small/large model configs
     print("=== small model ===")
@@ -49,8 +62,8 @@ if __name__ == "__main__":
     src2_model = copy.deepcopy(small_model)
 
     # stitched config / model
-    stitched_config = StitchedBertConfig(**small_model.config.to_dict())
-    stitched_model = BertModel(stitched_config).to(device)
+    stitched_config = StitchedBertConfig(**small_model.config.to_dict(), num_labels=num_labels)
+    stitched_model = BertForSequenceClassification(stitched_config).to(device)
 
     # print stitched model configs
     print("=== stitched model ===")
@@ -58,11 +71,18 @@ if __name__ == "__main__":
 
     # if the two models are stitchable, stitch them
     check_if_stitchable(src1_model.config, src2_model.config)
-    stitch(src1_model, src2_model, stitched_model)
+    stitch(src1_model, src2_model, stitched_model, skip_layernorm)
+
+    return src1_model, src2_model, large_model, stitched_model
+
+
+if __name__ == "__main__":
+    # load models, tokenizer
+    tokenizer = load_tokenizer(vocab_path)
+    src1_model, src2_model, large_model, stitched_model = load_models()
 
     # forward
-    tokenizer = BertTokenizer(vocab_path)
-    encoded_input = tokenizer(input_text, return_tensors="pt").to(device)
+    encoded_input = tokenizer(input_text1, input_text2, return_tensors="pt").to(device)
 
     # outputs (dict)
     # keys: ['last_hidden_state', 'pooler_output', 'hidden_states', 'attentions']
