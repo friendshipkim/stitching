@@ -52,6 +52,10 @@ def copy_linear(src1: Type[nn.Linear], src2: Type[nn.Linear], tgt: Type[nn.Linea
 
     # Initialize with epsilon
     tgt.weight.data[:] = epsilon
+    
+    # # initialize to normal dist
+    # mu, std = 0, 1e-3
+    # tgt.weight.data[:] = torch.randn_like(tgt.weight.data) * std + mu
 
     # Copy weights diagonally
     tgt.weight.data[:src1_out_dim, :src1_in_dim] = src1.weight.data
@@ -76,6 +80,7 @@ def copy_layernorm(src1: Type[nn.LayerNorm], src2: Type[nn.LayerNorm], tgt: Type
     assert tgt_dim == src1_dim + src2_dim
 
     # Copy weights
+    # NOTE: if stitching two different models: (src1.weight.data + src2.weight.data) / 2
     tgt.weight.data[:src1_dim] = src1.weight.data
     tgt.weight.data[-src2_dim:] = src2.weight.data
 
@@ -126,7 +131,6 @@ def copy_attention(
     copy_self_attn(src1.self, src2.self, tgt.self, epsilon)
 
     # Output projection
-    # TODO: check output projections
     copy_linear(src1.output.dense, src2.output.dense, tgt.output.dense, epsilon)
 
     # Layernorm
