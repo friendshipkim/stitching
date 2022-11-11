@@ -19,7 +19,7 @@
 #### List of models
 1. mini
    * vanilla bert-mini
-> `src_model_name = "prajjwal1/bert-mini"`
+> src_model_name = "prajjwal1/bert-mini"    
 > `model_name = "bert_mini"`
 > `do_stitch = False`
 > `skip_layernorm = False`
