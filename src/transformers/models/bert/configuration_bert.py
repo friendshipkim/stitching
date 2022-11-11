@@ -160,10 +160,7 @@ class BertConfig(PretrainedConfig):
 class StitchedBertConfig(BertConfig):
     model_type = "stitched_bert"
 
-    def __init__(
-        self,
-        **kwargs
-    ):
+    def __init__(self, **kwargs):
         super().__init__(**kwargs)
         # NOTE: now stitching two models with identical architectures
         # to use two different architectures, change it to take two BertConfigs

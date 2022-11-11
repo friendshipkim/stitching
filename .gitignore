@@ -164,3 +164,7 @@ tags
 
 # DS_Store (MacOS)
 .DS_Store
+
+# wandb
+wandb
+saved_models
