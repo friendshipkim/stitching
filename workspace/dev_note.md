@@ -49,7 +49,7 @@
    ```
 
 4. mini-mini-skipln
-  * stitch two identical bert-minis except for layernorm parameters
+   * stitch two identical bert-minis except for layernorm parameters
    ```
    src_model_name = "prajjwal1/bert-mini"
    model_name = "bert_mini" 

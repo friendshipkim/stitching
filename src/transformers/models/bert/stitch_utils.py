@@ -81,12 +81,12 @@ def copy_layernorm(src1: Type[nn.LayerNorm], src2: Type[nn.LayerNorm], tgt: Type
 
     # Copy weights
     # NOTE: if stitching two different models: (src1.weight.data + src2.weight.data) / 2
-    tgt.weight.data[:src1_dim] = src1.weight.data
-    tgt.weight.data[-src2_dim:] = src2.weight.data
+    tgt.weight.data[:src1_dim] = src1.weight.data  # / 2
+    tgt.weight.data[-src2_dim:] = src2.weight.data  # / 2
 
     # Copy biases
-    tgt.bias.data[:src1_dim] = src1.bias.data
-    tgt.bias.data[-src2_dim:] = src2.bias.data
+    tgt.bias.data[:src1_dim] = src1.bias.data  # / 2
+    tgt.bias.data[-src2_dim:] = src2.bias.data  # / 2
 
 
 def copy_self_attn(
@@ -213,9 +213,9 @@ def make_dummy_model(src1: Type[BertModel], tgt: Type[BertModel], epsilon: float
     # define dummy model
     dummy_model = src1.__class__(dummy_cfg)
 
-    # update all parameters with epsilon
-    for p in dummy_model.parameters():
-        p.data[:] = epsilon
+    # # update all parameters with epsilon
+    # for p in dummy_model.parameters():
+    #     p.data[:] = epsilon
 
     return dummy_model
 
