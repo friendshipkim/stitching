@@ -38,3 +38,4 @@ cd workspace
     --weight_decay 0.01 \
     --load_best_model_at_end True
   ```
+* See `dev_note.md` for the list of models
