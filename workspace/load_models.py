@@ -49,8 +49,8 @@ def load_tokenizer(model_name: str, model_max_length: int = 512) -> Type[transfo
 
 
 def load_model(
-    src_model_name: str, do_stitch: bool, skip_layernorm: bool, stitch_dummy: bool, device: str, num_labels: int = 2
-) -> Type[BertForSequenceClassification]:
+    src_model_name: str, do_stitch: bool, skip_layernorm: bool, stitch_dummy: bool, device: str,
+    num_labels: int = 2, src_model_name2: str = None) -> Type[BertForSequenceClassification]:
     """load either source or stitched model
 
     Args:
@@ -74,8 +74,13 @@ def load_model(
     if do_stitch:
         # two models to be stitched
         # TODO: replace with different bert models
+        if src_model_name2 is not None:
+            src2_model = AutoModel.from_pretrained(src_model_name).to(device)
+        elif stitch_dummy:
+            src2_model = None
+        else:
+            src2_model = copy.deepcopy(src_model)
         src1_model = src_model
-        src2_model = None if stitch_dummy else copy.deepcopy(src_model)
 
         # stitched config / model
         stitched_config = StitchedBertConfig(**src_model.config.to_dict(), num_labels=num_labels)
