@@ -105,32 +105,32 @@ def parse_args():
         help="The checkpoint save strategy to adopt during training. Possible values are: 'no', 'steps', 'epoch'",
     )
     parser.add_argument(
-        "--learning_rate", type=str, default=cfg.learning_rate, help="The initial learning rate for AdamW optimizer"
+        "--learning_rate", type=float, default=cfg.learning_rate, help="The initial learning rate for AdamW optimizer"
     )
     parser.add_argument(
         "--per_device_train_batch_size",
-        type=str,
+        type=int,
         default=cfg.per_device_train_batch_size,
         help="The batch size per GPU/TPU core/CPU for training",
     )
     parser.add_argument(
         "--per_device_eval_batch_size",
-        type=str,
+        type=int,
         default=cfg.per_device_eval_batch_size,
         help="The batch size per GPU/TPU core/CPU for evaluation",
     )
     parser.add_argument(
-        "--num_train_epochs", type=str, default=cfg.num_train_epochs, help="Total number of training epochs to perform"
+        "--num_train_epochs", type=int, default=cfg.num_train_epochs, help="Total number of training epochs to perform"
     )
     parser.add_argument(
         "--weight_decay",
-        type=str,
+        type=float,
         default=cfg.weight_decay,
         help="The weight decay to apply (if not zero) to all layers except all bias and LayerNorm weights in AdamW optimizer.",
     )
     parser.add_argument(
         "--load_best_model_at_end",
-        type=str,
+        type=bool,
         default=cfg.load_best_model_at_end,
         help="Whether or not to load the best model found during training at the end of training",
     )
@@ -220,7 +220,7 @@ if __name__ == "__main__":
         trainer.evaluate()
         print("=" * 6)
 
-        print("=" * 6 + f" Saving best model to {args.best_model_path} " + "=" * 6)
+        print("=" * 6 + f" Saving best model to {best_model_path} " + "=" * 6)
         model.save_pretrained(best_model_path)
 
     # ====== eval only
