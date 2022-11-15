@@ -220,7 +220,7 @@ if __name__ == "__main__":
         trainer.evaluate()
         print("=" * 6)
 
-        print("=" * 6 + f" Saving best model to {args.best_model_path} " + "=" * 6)
+        print("=" * 6 + f" Saving best model to {best_model_path} " + "=" * 6)
         model.save_pretrained(best_model_path)
 
     # ====== eval only
