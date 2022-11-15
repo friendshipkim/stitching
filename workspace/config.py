@@ -1,7 +1,7 @@
 """
 configurations
 """
-do_train = False
+do_train = True
 seed = 0
 devid = 0  # gpu id: 'cpu' if -1
 
@@ -11,7 +11,7 @@ src_model_name = "prajjwal1/bert-mini"
 # compare_model_name = "prajjwal1/bert-small"
 
 model_dir = "./saved_models/"
-model_name = "bert_mini-mini"
+model_name = "bert_mini-mini_ver3"
 do_stitch = True
 skip_layernorm = False
 stitch_dummy = False
