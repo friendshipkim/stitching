@@ -5,6 +5,7 @@
 pip -r requirements.txt
 pip install -e .
 ```
+TODO: add requirements.txt
 
 ## 2. Finetune models on GLUE datasets
 ### 1. Setup wandb
