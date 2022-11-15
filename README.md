@@ -2,7 +2,7 @@
 
 ## 1. Install requirements & transformers
 ```
-pip -r -r requirements.txt
+pip -r requirements.txt
 pip install -e .
 ```
 
