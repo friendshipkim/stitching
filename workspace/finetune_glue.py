@@ -186,9 +186,9 @@ def parse_args():
         help=f"Second model to stitch",
     )
     parser.add_argument(
-        "--epslion",
+        "--epsilon",
         type=float,
-        default=cfg.epslion,
+        default=cfg.epsilon,
         help=f"The pointwise std of the (normal) intialization of the cross diagonal terms. Default: {cfg.epsilon}",
     )
 
