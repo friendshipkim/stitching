@@ -160,7 +160,9 @@ def parse_args():
         help=f"The batch size per GPU/TPU core/CPU for evaluation. Default: {cfg.per_device_eval_batch_size}",
     )
     parser.add_argument(
-        "--num_train_epochs", type=int, default=cfg.num_train_epochs, help="Total number of training epochs to perform",
+        "--num_train_epochs", 
+        default=cfg.num_train_epochs,
+        help="Total number of training epochs to perform",
         type=int,
         default=cfg.num_train_epochs,
         help=f"Total number of training epochs to perform. Default: {cfg.num_train_epochs}"
