@@ -179,6 +179,13 @@ def parse_args():
         default=cfg.load_best_model_at_end,
         help=f"Whether or not to load the best model found during training at the end of training. Default: {cfg.load_best_model_at_end}",
     )
+    parser.add_argument(
+        "--src_model_dir2",
+        type=str,
+        const=True,
+        default=None,
+        help=f"Second model to stitch",
+    )
 
     args = parser.parse_args()
 
@@ -247,6 +254,7 @@ if __name__ == "__main__":
             args.skip_layernorm,
             args.stitch_dummy,
             num_labels,
+            src_model2=args.src_model_dir2,
         )
 
         # pass args to trainer

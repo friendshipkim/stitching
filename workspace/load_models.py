@@ -50,7 +50,7 @@ def load_tokenizer(model_name: str, model_max_length: int = 512) -> Type[transfo
 
 def load_model(
     src_model_name: str, do_stitch: bool, skip_layernorm: bool, stitch_dummy: bool, device: str,
-    num_labels: int = 2, src_model_name2: str = None) -> Type[BertForSequenceClassification]:
+    num_labels: int = 2, src_model_dir2: str = None) -> Type[BertForSequenceClassification]:
     """load either source or stitched model
     Args:
         src_model_name (str): Source model to load from huggingface model hub
@@ -72,8 +72,8 @@ def load_model(
     if do_stitch:
         # two models to be stitched
         # TODO: replace with different bert models
-        if src_model_name2 is not None:
-            src2_model = AutoModel.from_pretrained(src_model_name).to(device)
+        if src_model_dir2 is not None:
+            src2_model = AutoModel.from_pretrained(src_model_name, num_labels=num_labels).to(device)
         elif stitch_dummy:
             src2_model = None
         else:
