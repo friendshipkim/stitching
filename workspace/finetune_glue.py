@@ -182,7 +182,6 @@ def parse_args():
     parser.add_argument(
         "--src_model_dir2",
         type=str,
-        const=True,
         default=None,
         help=f"Second model to stitch",
     )
