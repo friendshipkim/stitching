@@ -253,7 +253,7 @@ if __name__ == "__main__":
             args.skip_layernorm,
             args.stitch_dummy,
             num_labels,
-            src_model2=args.src_model_dir2,
+            src_model_dir2=args.src_model_dir2,
         )
 
         # pass args to trainer
