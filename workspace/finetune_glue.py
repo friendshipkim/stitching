@@ -161,8 +161,6 @@ def parse_args():
     )
     parser.add_argument(
         "--num_train_epochs", 
-        default=cfg.num_train_epochs,
-        help="Total number of training epochs to perform",
         type=int,
         default=cfg.num_train_epochs,
         help=f"Total number of training epochs to perform. Default: {cfg.num_train_epochs}"
