@@ -1,5 +1,6 @@
 #! /usr/bin/env bash
 # export WANDB_MODE=disabled
+#export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 python "/opt/ml/code/workspace/finetune_glue.py" \
        --do_train True --seed 0 --devid 0 --task mnli --src_model_name prajjwal1/bert-mini --model_dir ./saved_models/ \
        --model_name bert_mini-mini-different-seeds --do_stitch True --skip_layernorm False --stitch_dummy False --evaluation_strategy epoch \
