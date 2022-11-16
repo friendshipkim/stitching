@@ -185,6 +185,12 @@ def parse_args():
         default=None,
         help=f"Second model to stitch",
     )
+    parser.add_argument(
+        "--epslion",
+        type=float,
+        default=cfg.epslion,
+        help=f"The pointwise std of the (normal) intialization of the cross diagonal terms. Default: {cfg.epsilon}",
+    )
 
     args = parser.parse_args()
 
@@ -254,6 +260,7 @@ if __name__ == "__main__":
             args.stitch_dummy,
             num_labels,
             src_model_dir2=args.src_model_dir2,
+            epsilon=args.epsilon,
         )
 
         # pass args to trainer

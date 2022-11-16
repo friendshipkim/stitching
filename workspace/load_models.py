@@ -49,8 +49,14 @@ def load_tokenizer(model_name: str, model_max_length: int = 512) -> Type[transfo
 
 
 def load_model(
-    src_model_name: str, do_stitch: bool, skip_layernorm: bool, stitch_dummy: bool, 
-    num_labels: int = 2, src_model_dir2: str = None) -> Type[BertForSequenceClassification]:
+    src_model_name: str,
+    do_stitch: bool,
+    skip_layernorm: bool,
+    stitch_dummy: bool, 
+    num_labels: int = 2,
+    src_model_dir2: str = None,
+    epsilon: float = 0
+    ) -> Type[BertForSequenceClassification]:
     """load either source or stitched model
     Args:
         src_model_name (str): Source model to load from huggingface model hub
@@ -81,7 +87,7 @@ def load_model(
         src1_model = src_model
 
         # stitched config / model
-        stitched_config = StitchedBertConfig(**src_model.config.to_dict(), num_labels=num_labels)
+        stitched_config = StitchedBertConfig(**src_model.config.to_dict(), num_labels=num_labels, epsilon=epsilon)
         stitched_model = BertForSequenceClassification(stitched_config)
 
         # print stitched model configs

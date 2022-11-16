@@ -27,3 +27,4 @@ per_device_eval_batch_size = 64
 num_train_epochs = 5
 weight_decay = 0.01
 load_best_model_at_end = True
+epsilon = 1e-3
