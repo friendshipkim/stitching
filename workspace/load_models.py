@@ -9,7 +9,7 @@ from transformers.models.bert.stitch_utils import stitch
 
 
 # ====== global variables
-devid = 0
+# devid = 0
 src_model_name = "prajjwal1/bert-mini"
 compare_model_name = "prajjwal1/bert-small"
 
@@ -52,20 +52,18 @@ def load_model(
     src_model_name: str, do_stitch: bool, skip_layernorm: bool, stitch_dummy: bool, device: str,
     num_labels: int = 2, src_model_name2: str = None) -> Type[BertForSequenceClassification]:
     """load either source or stitched model
-
     Args:
         src_model_name (str): Source model to load from huggingface model hub
         do_stitch (bool): Whether to finetine a stitched model
         skip_layernorm (bool): If stitch, whether to skip copying layernorm params
         stitch_dummy (bool): Whether to stitch a dummy model initialized with eps or Xavier
-        device (str): Device to load model, cuda or cpu
         num_labels (int): The number of labels for sequence classification. Defaults to 2.
 
     Returns:
         BertForSequenceClassification: source or stitched model
     """
     # load pretrained models
-    src_model = AutoModelForSequenceClassification.from_pretrained(src_model_name, num_labels=num_labels).to(device)
+    src_model = AutoModelForSequenceClassification.from_pretrained(src_model_name, num_labels=num_labels)
 
     # print spirce model configs
     print("=== source model ===")
@@ -84,7 +82,7 @@ def load_model(
 
         # stitched config / model
         stitched_config = StitchedBertConfig(**src_model.config.to_dict(), num_labels=num_labels)
-        stitched_model = BertForSequenceClassification(stitched_config).to(device)
+        stitched_model = BertForSequenceClassification(stitched_config)
 
         # print stitched model configs
         print("=== stitched model ===")
@@ -93,7 +91,7 @@ def load_model(
         print_model_cfg(stitched_model)
 
         # if the two models are stitchable, stitch them
-        stitch(src1_model, src2_model, stitched_model, skip_layernorm, device)
+        stitch(src1_model, src2_model, stitched_model, skip_layernorm)
         return stitched_model
 
     else:
@@ -105,7 +103,6 @@ def load_all_models(
     compare_model_name: str,
     skip_layernorm: bool,
     stitch_dummy: bool,
-    device: str,
     num_labels: int = 2,
 ):
     """load small / large / stitched models at once
@@ -115,17 +112,14 @@ def load_all_models(
         compare_model_name (str): Model to compare with a stitched model
         skip_layernorm (bool): If stitch, whether to skip copying layernorm params
         stitch_dummy (bool): Whether to stitch a dummy model initialized with eps or Xavier
-        device (str): Device to load model, cuda or cpu
         num_labels (int): The number of labels for sequence classification. Defaults to 2.
 
     Returns:
         Tuple: src1_model, src2_model, compare_model, stitched_model
     """
     # load pretrained models
-    src_model = AutoModelForSequenceClassification.from_pretrained(src_model_name, num_labels=num_labels).to(device)
-    compare_model = AutoModelForSequenceClassification.from_pretrained(compare_model_name, num_labels=num_labels).to(
-        device
-    )
+    src_model = AutoModelForSequenceClassification.from_pretrained(src_model_name, num_labels=num_labels)
+    compare_model = AutoModelForSequenceClassification.from_pretrained(compare_model_name, num_labels=num_labels)
 
     # set configs to return intermediate outputs
     # NOTE: disable this to use hf trainer
@@ -148,7 +142,7 @@ def load_all_models(
 
     # stitched config / model
     stitched_config = StitchedBertConfig(**src_model.config.to_dict(), num_labels=num_labels)
-    stitched_model = BertForSequenceClassification(stitched_config).to(device)
+    stitched_model = BertForSequenceClassification(stitched_config)
 
     # print stitched model configs
     print("=== stitched model ===")
@@ -157,28 +151,28 @@ def load_all_models(
     print_model_cfg(stitched_model)
 
     # if the two models are stitchable, stitch them
-    stitch(src1_model, src2_model, stitched_model, skip_layernorm, device)
+    stitch(src1_model, src2_model, stitched_model, skip_layernorm)
 
     return src1_model, src2_model, compare_model, stitched_model
 
 
 if __name__ == "__main__":
-    device = f"cuda:{devid}" if devid != -1 else "cpu"
+    # device = f"cuda:{devid}" if devid != -1 else "cpu"
 
     # load tokenizer
     tokenizer = load_tokenizer(src_model_name)
 
     # load each model
-    model = load_model(src_model_name, do_stitch, skip_layernorm, stitch_dummy, device)
+    model = load_model(src_model_name, do_stitch, skip_layernorm, stitch_dummy)
 
     # load all models at once
     src1_model, src2_model, compare_model, stitched_model = load_all_models(
-        src_model_name, compare_model_name, skip_layernorm, stitch_dummy, device
+        src_model_name, compare_model_name, skip_layernorm, stitch_dummy
     )
     breakpoint()
 
     # forward
-    encoded_input = tokenizer(input_text1, input_text2, return_tensors="pt").to(device)
+    encoded_input = tokenizer(input_text1, input_text2, return_tensors="pt")
 
     # outputs (dict)
     # keys: ['last_hidden_state', 'pooler_output', 'hidden_states', 'attentions']

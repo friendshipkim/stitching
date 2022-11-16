@@ -1,9 +1,10 @@
 """
 configurations
 """
-do_train = False
+do_train = True
+use_wandb = True
 seed = 0
-devid = 0  # gpu id: 'cpu' if -1
+# devid = 0  # gpu id: 'cpu' if -1
 
 # ====== dataset / model configs
 task = "mnli"

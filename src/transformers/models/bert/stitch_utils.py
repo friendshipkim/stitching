@@ -221,7 +221,7 @@ def make_dummy_model(src1: Type[BertModel], tgt: Type[BertModel], epsilon: float
 
 
 def stitch(
-    src1: Type[BertModel], src2: Union[Type[BertModel], None], tgt: Type[BertModel], skip_layernorm: bool, device: str
+    src1: Type[BertModel], src2: Union[Type[BertModel], None], tgt: Type[BertModel], skip_layernorm: bool
 ) -> None:
     """
     Stitch two Bert models by copying the internal weights
@@ -231,13 +231,12 @@ def stitch(
         src2 (transformer.BertModel or None): second source model to stitch, if None, only copy the first model
         tgt (transformer.BertModel): stitched target model
         skip_layernorm (bool): whether not to stich layernorms
-        device (str): cpu or cuda
     """
     epsilon = tgt.config.epsilon
 
     # if src2 is not given, make dummy model with epsilon
     if src2 is None:
-        src2 = make_dummy_model(src1, tgt, epsilon).to(device)
+        src2 = make_dummy_model(src1, tgt, epsilon)
 
     # check if two models are stitchable
     check_if_stitchable(src1.config, src2.config)

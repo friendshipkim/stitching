@@ -26,6 +26,17 @@ task_to_keys = {
 }
 
 
+def str2bool(v):
+    if isinstance(v, bool):
+        return v
+    if v.lower() in ("yes", "true", "t", "y", "1"):
+        return True
+    elif v.lower() in ("no", "false", "f", "n", "0"):
+        return False
+    else:
+        raise argparse.ArgumentTypeError("Boolean value expected.")
+
+
 def preprocess_function(examples):
     if sentence2_key is None:
         return tokenizer(examples[sentence1_key], return_tensors="pt", padding=True, truncation=True)
@@ -47,48 +58,74 @@ def parse_args():
     parser = argparse.ArgumentParser(description="Finetune a bert model on GLUE tasks")
 
     parser.add_argument(
-        "--do_train", type=bool, default=cfg.do_train, help=f"Whether to train the model (Default: {cfg.do_train})"
+        "--do_train",
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=cfg.do_train,
+        help=f"Whether to train the model (Default: {cfg.do_train})",
     )
-    parser.add_argument("--seed", type=int, default=cfg.seed, help=f"Random seed (Default: {cfg.seed})")
-    parser.add_argument("--devid", type=int, default=cfg.seed, help=f"GPU id, if -1 use cpup (Default: {cfg.devid}")
+    parser.add_argument(
+        "--use_wandb",
+        type=str2bool,
+        nargs="?",
+        const=True,
+        default=cfg.use_wandb,
+        help=f"Whether to use wandb for logging (Default: {cfg.use_wandb})",
+    )
+    parser.add_argument("--seed", type=int, default=cfg.seed, help=f"Random seed, Default: {cfg.seed}")
+
+    # huggingface trainer use gpu by default
+    # parser.add_argument("--devid", type=int, default=cfg.seed, help=f"GPU id, if -1 use cpup (Default: {cfg.devid}")
 
     # dataset / model configs
-    parser.add_argument("--task", type=str, default=cfg.task, help=f"GLUE task name (Default: {cfg.task}")
+    parser.add_argument(
+        "--task",
+        type=str,
+        default=cfg.task,
+        help=f"GLUE task name. Default: '{cfg.task}'",
+    )
     parser.add_argument(
         "--src_model_name",
         type=str,
         default=cfg.src_model_name,
-        help=f"Source model to load from huggingface model hub, Default: {cfg.src_model_name}",
+        help=f"Source model to load from huggingface model hub. Default: '{cfg.src_model_name}'",
     )
     parser.add_argument(
         "--model_dir",
         type=str,
         default=cfg.model_dir,
-        help=f"Path to save finetuned models, Default: {cfg.model_dir}",
+        help=f"Path to save finetuned models. Default: '{cfg.model_dir}'",
     )
     parser.add_argument(
         "--model_name",
         type=str,
         default=cfg.model_name,
-        help=f"Model name to save, Default: {cfg.model_name}",
+        help=f"Model name to save. Default: '{cfg.model_name}'",
     )
     parser.add_argument(
         "--do_stitch",
-        type=bool,
+        type=str2bool,
+        nargs="?",
+        const=True,
         default=cfg.do_stitch,
-        help=f"Whether to finetine a stitched model, Default: {cfg.do_stitch}",
+        help=f"Whether to finetine a stitched model. Default: {cfg.do_stitch}",
     )
     parser.add_argument(
         "--skip_layernorm",
-        type=bool,
+        type=str2bool,
+        nargs="?",
+        const=True,
         default=cfg.skip_layernorm,
-        help=f"If stitch, whether to skip copying layernorm params, Default: {cfg.skip_layernorm}",
+        help=f"If stitch, whether to skip copying layernorm params. Default: {cfg.skip_layernorm}",
     )
     parser.add_argument(
         "--stitch_dummy",
-        type=bool,
+        type=str2bool,
+        nargs="?",
+        const=True,
         default=cfg.stitch_dummy,
-        help=f"Whether to stitch a dummy model initialized with eps or Xavier, Default: {cfg.stitch_dummy}",
+        help=f"Whether to stitch a dummy model initialized with eps or Xavier. Default: {cfg.stitch_dummy}",
     )
 
     # huggingface trainer args
@@ -96,43 +133,63 @@ def parse_args():
         "--evaluation_strategy",
         type=str,
         default=cfg.evaluation_strategy,
-        help="The evaluation strategy to adopt during training. Possible values are: 'no', 'steps', 'epoch'",
+        help=f"The evaluation strategy to adopt during training. Possible values are: 'no', 'steps', 'epoch'. Default: '{cfg.evaluation_strategy}'",
     )
     parser.add_argument(
         "--save_strategy",
         type=str,
         default=cfg.save_strategy,
-        help="The checkpoint save strategy to adopt during training. Possible values are: 'no', 'steps', 'epoch'",
+        help=f"The checkpoint save strategy to adopt during training. Possible values are: 'no', 'steps', 'epoch'. Default: '{cfg.save_strategy}'",
     )
     parser.add_argument(
+<<<<<<< HEAD
         "--learning_rate", type=float, default=cfg.learning_rate, help="The initial learning rate for AdamW optimizer"
+=======
+        "--learning_rate",
+        type=float,
+        default=cfg.learning_rate,
+        help=f"The initial learning rate for AdamW optimizer. Default: {cfg.learning_rate}",
+>>>>>>> master
     )
     parser.add_argument(
         "--per_device_train_batch_size",
         type=int,
         default=cfg.per_device_train_batch_size,
-        help="The batch size per GPU/TPU core/CPU for training",
+        help=f"The batch size per GPU/TPU core/CPU for training. Default: {cfg.per_device_train_batch_size}",
     )
     parser.add_argument(
         "--per_device_eval_batch_size",
         type=int,
         default=cfg.per_device_eval_batch_size,
-        help="The batch size per GPU/TPU core/CPU for evaluation",
+        help=f"The batch size per GPU/TPU core/CPU for evaluation. Default: {cfg.per_device_eval_batch_size}",
     )
     parser.add_argument(
+<<<<<<< HEAD
         "--num_train_epochs", type=int, default=cfg.num_train_epochs, help="Total number of training epochs to perform"
+=======
+        "--num_train_epochs",
+        type=int,
+        default=cfg.num_train_epochs,
+        help=f"Total number of training epochs to perform. Default: {cfg.num_train_epochs}",
+>>>>>>> master
     )
     parser.add_argument(
         "--weight_decay",
         type=float,
         default=cfg.weight_decay,
-        help="The weight decay to apply (if not zero) to all layers except all bias and LayerNorm weights in AdamW optimizer.",
+        help=f"The weight decay to apply (if not zero) to all layers except all bias and LayerNorm weights in AdamW optimizer. Default: {cfg.weight_decay}",
     )
     parser.add_argument(
         "--load_best_model_at_end",
+<<<<<<< HEAD
         type=bool,
+=======
+        type=str2bool,
+        nargs="?",
+        const=True,
+>>>>>>> master
         default=cfg.load_best_model_at_end,
-        help="Whether or not to load the best model found during training at the end of training",
+        help=f"Whether or not to load the best model found during training at the end of training. Default: {cfg.load_best_model_at_end}",
     )
 
     args = parser.parse_args()
@@ -142,7 +199,8 @@ def parse_args():
 
 if __name__ == "__main__":
     args = parse_args()
-    device = f"cuda:{args.devid}" if args.devid != -1 else "cpu"
+    print(args)
+    # device = f"cuda:{args.devid}" if args.devid != -1 else "cpu"
 
     # ====== set random seed
     torch.manual_seed(args.seed)
@@ -186,12 +244,13 @@ if __name__ == "__main__":
         "num_train_epochs": args.num_train_epochs,
         "weight_decay": args.weight_decay,
         "load_best_model_at_end": args.load_best_model_at_end,
+        "report_to": "wandb" if args.use_wandb and args.do_train else "none",
     }
 
     # ====== train model
     if args.do_train:
-        # use wandb for logging
-        train_args["report_to"] = "wandb"
+        # # use wandb for logging
+        # train_args["report_to"] = "none"
 
         # ====== load initialized models
         model = load_model(
@@ -199,7 +258,6 @@ if __name__ == "__main__":
             args.do_stitch,
             args.skip_layernorm,
             args.stitch_dummy,
-            device,
             num_labels,
         )
 
@@ -229,7 +287,7 @@ if __name__ == "__main__":
         model = BertForSequenceClassification.from_pretrained(best_model_path, num_labels=num_labels)
 
         # update args
-        train_args["report_to"] = "none"
+        # train_args["report_to"] = "none"
         train_args["resume_from_checkpoint"] = best_model_path
 
         # pass to trainer
