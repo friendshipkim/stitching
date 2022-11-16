@@ -49,7 +49,7 @@ def load_tokenizer(model_name: str, model_max_length: int = 512) -> Type[transfo
 
 
 def load_model(
-    src_model_name: str, do_stitch: bool, skip_layernorm: bool, stitch_dummy: bool, device: str,
+    src_model_name: str, do_stitch: bool, skip_layernorm: bool, stitch_dummy: bool, 
     num_labels: int = 2, src_model_dir2: str = None) -> Type[BertForSequenceClassification]:
     """load either source or stitched model
     Args:
@@ -63,7 +63,7 @@ def load_model(
         BertForSequenceClassification: source or stitched model
     """
     # load pretrained models
-    src_model = AutoModelForSequenceClassification.from_pretrained(src_model_name, num_labels=num_labels)
+    src_model = AutoModelForSequenceClassification.from_pretrained(src_model_name, num_labels=num_labels).cuda()
 
     # print spirce model configs
     print("=== source model ===")
@@ -73,7 +73,7 @@ def load_model(
         # two models to be stitched
         # TODO: replace with different bert models
         if src_model_dir2 is not None:
-            src2_model = AutoModel.from_pretrained(src_model_name, num_labels=num_labels).to(device)
+            src2_model = AutoModelForSequenceClassification.from_pretrained(src_model_name, num_labels=num_labels).cuda()
         elif stitch_dummy:
             src2_model = None
         else:
