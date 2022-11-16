@@ -142,14 +142,10 @@ def parse_args():
         help=f"The checkpoint save strategy to adopt during training. Possible values are: 'no', 'steps', 'epoch'. Default: '{cfg.save_strategy}'",
     )
     parser.add_argument(
-<<<<<<< HEAD
-        "--learning_rate", type=float, default=cfg.learning_rate, help="The initial learning rate for AdamW optimizer"
-=======
         "--learning_rate",
         type=float,
         default=cfg.learning_rate,
         help=f"The initial learning rate for AdamW optimizer. Default: {cfg.learning_rate}",
->>>>>>> master
     )
     parser.add_argument(
         "--per_device_train_batch_size",
@@ -164,14 +160,10 @@ def parse_args():
         help=f"The batch size per GPU/TPU core/CPU for evaluation. Default: {cfg.per_device_eval_batch_size}",
     )
     parser.add_argument(
-<<<<<<< HEAD
         "--num_train_epochs", type=int, default=cfg.num_train_epochs, help="Total number of training epochs to perform"
-=======
-        "--num_train_epochs",
         type=int,
         default=cfg.num_train_epochs,
         help=f"Total number of training epochs to perform. Default: {cfg.num_train_epochs}",
->>>>>>> master
     )
     parser.add_argument(
         "--weight_decay",
@@ -181,13 +173,9 @@ def parse_args():
     )
     parser.add_argument(
         "--load_best_model_at_end",
-<<<<<<< HEAD
-        type=bool,
-=======
         type=str2bool,
         nargs="?",
         const=True,
->>>>>>> master
         default=cfg.load_best_model_at_end,
         help=f"Whether or not to load the best model found during training at the end of training. Default: {cfg.load_best_model_at_end}",
     )
