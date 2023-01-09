@@ -51,8 +51,8 @@ def copy_linear(src1: Type[nn.Linear], src2: Type[nn.Linear], tgt: Type[nn.Linea
     assert tgt_in_dim == src1_in_dim + src2_in_dim
 
     # Initialize with epsilon
-    tgt.weight.data[:] = epsilon
-
+    tgt.weight.data[:] = torch.randn_like(tgt.weight.data) * epsilon
+    
     # # initialize to normal dist
     # mu, std = 0, 1e-3
     # tgt.weight.data[:] = torch.randn_like(tgt.weight.data) * std + mu

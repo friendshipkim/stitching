@@ -160,10 +160,10 @@ def parse_args():
         help=f"The batch size per GPU/TPU core/CPU for evaluation. Default: {cfg.per_device_eval_batch_size}",
     )
     parser.add_argument(
-        "--num_train_epochs",
+        "--num_train_epochs", 
         type=int,
         default=cfg.num_train_epochs,
-        help=f"Total number of training epochs to perform. Default: {cfg.num_train_epochs}",
+        help=f"Total number of training epochs to perform. Default: {cfg.num_train_epochs}"
     )
     parser.add_argument(
         "--weight_decay",
@@ -178,6 +178,18 @@ def parse_args():
         const=True,
         default=cfg.load_best_model_at_end,
         help=f"Whether or not to load the best model found during training at the end of training. Default: {cfg.load_best_model_at_end}",
+    )
+    parser.add_argument(
+        "--src_model_dir2",
+        type=str,
+        default=None,
+        help=f"Second model to stitch",
+    )
+    parser.add_argument(
+        "--epsilon",
+        type=float,
+        default=cfg.epsilon,
+        help=f"The pointwise std of the (normal) intialization of the cross diagonal terms. Default: {cfg.epsilon}",
     )
 
     args = parser.parse_args()
@@ -227,7 +239,7 @@ if __name__ == "__main__":
         "evaluation_strategy": args.evaluation_strategy,
         "save_strategy": args.save_strategy,
         "learning_rate": args.learning_rate,
-        "per_device_train_batch_size": args.per_device_train_batch_size,
+        "per_device_train_batch_size": int(args.per_device_train_batch_size),
         "per_device_eval_batch_size": args.per_device_eval_batch_size,
         "num_train_epochs": args.num_train_epochs,
         "weight_decay": args.weight_decay,
@@ -247,6 +259,8 @@ if __name__ == "__main__":
             args.skip_layernorm,
             args.stitch_dummy,
             num_labels,
+            src_model_dir2=args.src_model_dir2,
+            epsilon=args.epsilon,
         )
 
         # pass args to trainer
