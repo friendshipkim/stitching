@@ -14,8 +14,8 @@ OTHER_PARAMS=${@:1}
     --use_wandb True \
     --seed $seed \
     --task mnli \
-    --src_model_name prajjwal1/bert-mini \
-    --src_model_dir2 prajjwal1/bert-small \
+    --src_model_name google/bert_uncased_L-4_H-256_A-4 \
+    --src_model_dir2 google/bert_uncased_L-4_H-512_A-8 \
     --model_dir ./saved_models/ \
     --model_name bert_mini-small \
     --do_stitch True \

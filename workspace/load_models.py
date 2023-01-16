@@ -17,9 +17,7 @@ do_stitch = True
 skip_layernorm = False
 stitch_dummy = False
 
-# vocabs are identical for small and large
-ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
-vocab_path = os.path.join(ROOT_DIR, "./vocab.txt")
+# input examples
 input_text1 = "Where is art?"
 input_text2 = "Where and what is art?"
 
@@ -43,8 +41,6 @@ def load_tokenizer(model_name: str, model_max_length: int = 512) -> Type[transfo
         transformers.BertTokenizerFast: bert tokenizer
     """
     tokenizer = AutoTokenizer.from_pretrained(model_name, model_max_length=model_max_length)
-    # or use vocab path
-    # tokenizer = BertTokenizer(vocab_path)
     return tokenizer
 
 

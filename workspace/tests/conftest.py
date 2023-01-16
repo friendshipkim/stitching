@@ -11,7 +11,7 @@ from transformers.tokenization_utils_base import BatchEncoding
 # ====== global variables
 bsz = 32
 seq_len = 100
-model_name = "prajjwal1/bert-mini"
+model_name = "google/bert_uncased_L-4_H-256_A-4"
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
 vocab_path = os.path.join(ROOT_DIR, "../vocab.txt")
 input_text = "Example input."

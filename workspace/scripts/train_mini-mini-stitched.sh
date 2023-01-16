@@ -10,7 +10,7 @@ export seed=$(($RANDOM%1000))
     --use_wandb True \
     --seed $seed \
     --task mnli \
-    --src_model_name prajjwal1/bert-mini \
+    --src_model_name google/bert_uncased_L-4_H-256_A-4 \
     --model_dir ./saved_models/ \
     --model_name bert_mini_seed_$seed \
     --do_stitch True \

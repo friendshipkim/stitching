@@ -5,7 +5,7 @@ python finetune_glue.py \
     --use_wandb False \
     --seed 0 \
     --task mnli \
-    --src_model_name prajjwal1/bert-mini \
+    --src_model_name google/bert_uncased_L-4_H-256_A-4 \
     --model_dir ./saved_models/ \
     --model_name bert_mini-mini \
     --do_stitch True \

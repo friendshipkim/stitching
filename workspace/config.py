@@ -8,8 +8,8 @@ seed = 0
 
 # ====== dataset / model configs
 task = "mnli"
-src_model_name = "prajjwal1/bert-mini"
-# compare_model_name = "prajjwal1/bert-small"
+src_model_name = "google/bert_uncased_L-4_H-256_A-4"
+# compare_model_name = "google/bert_uncased_L-4_H-512_A-8"
 
 model_dir = "./saved_models/"
 model_name = "bert_mini-mini"

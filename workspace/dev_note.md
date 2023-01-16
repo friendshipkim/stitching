@@ -20,7 +20,7 @@
 1. mini
    * vanilla bert-mini
    ```
-   src_model_name = "prajjwal1/bert-mini"
+   src_model_name = "google/bert_uncased_L-4_H-256_A-4"
    model_name = "bert_mini" 
    do_stitch = False 
    skip_layernorm = False 
@@ -30,7 +30,7 @@
 2. small
    * vanilla bert-small 
    ```
-   src_model_name = "prajjwal1/bert-small"
+   src_model_name = "google/bert_uncased_L-4_H-512_A-8"
    model_name = "bert_small"
    do_stitch = False
    skip_layernorm = False
@@ -41,7 +41,7 @@
 1. mini-mini
    * stitch two identical bert-minis, eps = 0
    ```
-   src_model_name = "prajjwal1/bert-mini"
+   src_model_name = "google/bert_uncased_L-4_H-256_A-4"
    model_name = "bert_mini" 
    do_stitch = True 
    skip_layernorm = False 
@@ -51,7 +51,7 @@
 4. mini-mini-skipln
    * stitch two identical bert-minis except for layernorm parameters
    ```
-   src_model_name = "prajjwal1/bert-mini"
+   src_model_name = "google/bert_uncased_L-4_H-256_A-4"
    model_name = "bert_mini" 
    do_stitch = True 
    skip_layernorm = True 
@@ -61,7 +61,7 @@
 5. mini-random
    * stitch bert-mini and randomly initialized same sized model
    ```
-   src_model_name = "prajjwal1/bert-mini"
+   src_model_name = "google/bert_uncased_L-4_H-256_A-4"
    model_name = "bert_mini" 
    do_stitch = True 
    skip_layernorm = False 
@@ -71,7 +71,7 @@
 6. mini-eps
    * stitch bert-mini and the same sized model initialized with eps
    ```
-   src_model_name = "prajjwal1/bert-mini"
+   src_model_name = "google/bert_uncased_L-4_H-256_A-4"
    model_name = "bert_mini" 
    do_stitch = True 
    skip_layernorm = False 
@@ -82,7 +82,7 @@
 7. mini-mini-normaleps
    * mini-mini but eps ~ N(0, 1e-6)
    ```
-   src_model_name = "prajjwal1/bert-mini"
+   src_model_name = "google/bert_uncased_L-4_H-256_A-4"
    model_name = "bert_mini" 
    do_stitch = True 
    skip_layernorm = False 
@@ -93,7 +93,7 @@
 8. mini-mini-avgln
    * mini-mini, average layernorm params
    ```
-   src_model_name = "prajjwal1/bert-mini"
+   src_model_name = "google/bert_uncased_L-4_H-256_A-4"
    model_name = "bert_mini" 
    do_stitch = True 
    skip_layernorm = False 
