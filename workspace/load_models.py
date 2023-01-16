@@ -10,8 +10,8 @@ from transformers.models.bert.stitch_utils import stitch
 
 # ====== global variables
 # devid = 0
-src_model_name = "prajjwal1/bert-mini"
-compare_model_name = "prajjwal1/bert-small"
+src_model_name = "google/bert_uncased_L-4_H-256_A-4"  # mini
+compare_model_name = "google/bert_uncased_L-4_H-512_A-8"  # small
 
 do_stitch = True
 skip_layernorm = False
