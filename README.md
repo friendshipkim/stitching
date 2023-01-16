@@ -1,11 +1,16 @@
 # Stitching Language Models
 
+## 0. Create a conda environment
+```
+conda create -n stitching python=3.8
+conda activate stitching
+```
+
 ## 1. Install requirements & transformers
 ```
-pip -r requirements.txt
+pip install -r requirements.txt
 pip install -e .
 ```
-TODO: add requirements.txt
 
 ## 2. Finetune models on GLUE datasets
 ### 1. Setup wandb
