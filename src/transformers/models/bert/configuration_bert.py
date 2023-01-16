@@ -167,7 +167,7 @@ class StitchedBertConfig(BertConfig):
         self.hidden_size = self.hidden_size * 2
         self.intermediate_size = self.intermediate_size * 2
         self.num_attention_heads = self.num_attention_heads * 2
-        self.epsilon = 0.0
+        self.epsilon = kwargs.get("epsilon", 0)
 
 
 class BertOnnxConfig(OnnxConfig):

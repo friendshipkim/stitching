@@ -49,10 +49,15 @@ def load_tokenizer(model_name: str, model_max_length: int = 512) -> Type[transfo
 
 
 def load_model(
-    src_model_name: str, do_stitch: bool, skip_layernorm: bool, stitch_dummy: bool, num_labels: int = 2
-) -> Type[BertForSequenceClassification]:
+    src_model_name: str,
+    do_stitch: bool,
+    skip_layernorm: bool,
+    stitch_dummy: bool, 
+    num_labels: int = 2,
+    src_model_dir2: str = None,
+    epsilon: float = 0
+    ) -> Type[BertForSequenceClassification]:
     """load either source or stitched model
-
     Args:
         src_model_name (str): Source model to load from huggingface model hub
         do_stitch (bool): Whether to finetine a stitched model
@@ -64,7 +69,7 @@ def load_model(
         BertForSequenceClassification: source or stitched model
     """
     # load pretrained models
-    src_model = AutoModelForSequenceClassification.from_pretrained(src_model_name, num_labels=num_labels)
+    src_model = AutoModelForSequenceClassification.from_pretrained(src_model_name, num_labels=num_labels).cuda()
 
     # print spirce model configs
     print("=== source model ===")
@@ -73,11 +78,16 @@ def load_model(
     if do_stitch:
         # two models to be stitched
         # TODO: replace with different bert models
+        if src_model_dir2 is not None:
+            src2_model = AutoModelForSequenceClassification.from_pretrained(src_model_name, num_labels=num_labels).cuda()
+        elif stitch_dummy:
+            src2_model = None
+        else:
+            src2_model = copy.deepcopy(src_model)
         src1_model = src_model
-        src2_model = None if stitch_dummy else copy.deepcopy(src_model)
 
         # stitched config / model
-        stitched_config = StitchedBertConfig(**src_model.config.to_dict(), num_labels=num_labels)
+        stitched_config = StitchedBertConfig(**src_model.config.to_dict(), num_labels=num_labels, epsilon=epsilon)
         stitched_model = BertForSequenceClassification(stitched_config)
 
         # print stitched model configs
