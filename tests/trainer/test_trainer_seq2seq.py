@@ -26,7 +26,7 @@ class Seq2seqTrainerTester(TestCasePlus):
     @slow
     @require_torch
     def test_finetune_bert2bert(self):
-        bert2bert = EncoderDecoderModel.from_encoder_decoder_pretrained("prajjwal1/bert-tiny", "prajjwal1/bert-tiny")
+        bert2bert = EncoderDecoderModel.from_encoder_decoder_pretrained("google/bert_uncased_L-2_H-128_A-2", "google/bert_uncased_L-2_H-128_A-2")
         tokenizer = BertTokenizer.from_pretrained("bert-base-uncased")
 
         bert2bert.config.vocab_size = bert2bert.config.encoder.vocab_size
